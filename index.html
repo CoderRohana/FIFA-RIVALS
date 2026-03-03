@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA RIVALS | Pro Collector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --fifa-black: #0b0e13;
+            --fifa-gold: #e2b35a;
+            --card-gradient: linear-gradient(145deg, #2c2c2c, #000000);
+            --sidebar-width: 200px;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--fifa-black);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex: 1;
+            width: 100%;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            background: #050505;
+            border-right: 1px solid var(--fifa-gold);
+            padding: 10px;
+            height: calc(100vh - 70px);
+            position: sticky;
+            top: 70px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .player-list-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            margin: 4px 0;
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .sidebar-thumb {
+            width: 25px;
+            height: 35px;
+            background: #222;
+            object-fit: contain;
+            filter: grayscale(1);
+            opacity: 0.3;
+        }
+
+        .collected {
+            border: 1px solid var(--fifa-gold);
+            background: #1a1710;
+        }
+
+        .collected .sidebar-thumb {
+            filter: grayscale(0);
+            opacity: 1;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            min-width: 0;
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        .player-card {
+            background: var(--card-gradient);
+            border: 2px solid var(--fifa-gold);
+            border-radius: 10px 10px 10px 40px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 350px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .rating {
+            font-size: 2.5rem;
+            color: var(--fifa-gold);
+            font-weight: 900;
+            text-align: left;
+        }
+
+        .player-img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            margin: 5px 0;
+        }
+
+        .player-name {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            border-top: 1px solid var(--fifa-gold);
+            padding-top: 8px;
+            font-weight: 800;
+            margin-top: auto;
+        }
+
+        .card-stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .stat-value {
+            color: var(--fifa-gold);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: #aaa;
+            display: block;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 5px;
+            border: none;
+            margin: 5px;
+        }
+
+        #packBtn {
+            background: var(--fifa-gold);
+            color: black;
+        }
+
+        #packBtn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #ssBtn {
+            background: white;
+            color: black;
+            display: none;
+        }
+
+        #timerDisplay {
+            margin-top: 10px;
+            color: var(--fifa-gold);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            background: #050505;
+            color: var(--fifa-gold);
+            text-align: center;
+            padding: 15px;
+            border-top: 1px solid var(--fifa-gold);
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header
+        style="height: 70px; padding: 0 20px; border-bottom: 2px solid var(--fifa-gold); display: flex; align-items: center; justify-content: center;">
+        <h1 style="margin:0; font-size: 1.5rem;">FIFA RIVALS</h1>
+    </header>
+
+    <div class="main-wrapper">
+        <div id="sidebar">
+            <h4 id="sideTitle" style="color:var(--fifa-gold); margin-top: 0;">COLLECTION (0/0)</h4>
+            <div id="playerTrackerList"></div>
+        </div>
+
+        <div class="content">
+            <div class="btn-group">
+                <button id="packBtn" onclick="handlePackOpening()">Open 5-Player Pack</button>
+                <div id="timerDisplay"></div>
+                <button id="ssBtn" onclick="takeScreenshot()">Download Squad</button>
+            </div>
+
+            <div id="captureArea" style="background: #0b0e13; padding: 10px; width: 100%;">
+                <div class="card-container" id="packResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        MADE BY ROHAN DUTTA
+    </footer>
+
+    <script>
+        const playerData = {
+            "Buffon": { ovr: 93, att: 10, def: 94 },
+            "Casillas": { ovr: 92, att: 12, def: 93 },
+            "CR7": { ovr: 91, att: 94, def: 35 },
+            "Cruyff": { ovr: 95, att: 96, def: 60 },
+            "Haaland": { ovr: 94, att: 98, def: 40 },
+            "Hakimi": { ovr: 88, att: 85, def: 84 },
+            "Joao Cancelo": { ovr: 87, att: 84, def: 82 },
+            "Kaka": { ovr: 91, att: 90, def: 55 },
+            "Kounde": { ovr: 88, att: 70, def: 89 },
+            "Maldini": { ovr: 96, att: 65, def: 98 },
+            "Maradona": { ovr: 97, att: 98, def: 50 },
+            "Mbappe": { ovr: 95, att: 97, def: 42 },
+            "Messi": { ovr: 92, att: 93, def: 38 },
+            "Modric": { ovr: 89, att: 86, def: 78 },
+            "Nesta": { ovr: 92, att: 45, def: 94 },
+            "Pele": { ovr: 98, att: 99, def: 55 },
+            "R9": { ovr: 97, att: 99, def: 40 },
+            "Roberto Carlos": { ovr: 91, att: 88, def: 89 },
+            "Ronaldinho": { ovr: 94, att: 95, def: 45 },
+            "Xavi": { ovr: 90, att: 85, def: 75 },
+            "Yamal": { ovr: 89, att: 91, def: 48 },
+            "Yashin": { ovr: 94, att: 10, def: 96 },
+            "Zidane": { ovr: 96, att: 94, def: 72 },
+            "Beckenbauer": { ovr: 95, att: 78, def: 97 },
+            "Henry": { ovr: 93, att: 95, def: 45 },
+            "Bellingham": { ovr: 90, att: 88, def: 82 },
+            "Vinicius Jr": { ovr: 91, att: 93, def: 40 },
+            "Kevin De Bruyne": { ovr: 91, att: 89, def: 70 },
+            "Rodri": { ovr: 91, att: 80, def: 92 },
+            "Van Dijk": { ovr: 90, att: 60, def: 91 },
+            "Courtois": { ovr: 90, att: 10, def: 91 },
+            "Salah": { ovr: 90, att: 92, def: 45 },
+            "Kane": { ovr: 91, att: 94, def: 48 },
+            "Lewandowski": { ovr: 90, att: 93, def: 42 },
+            "Neymar": { ovr: 90, att: 92, def: 35 },
+            "Baresi": { ovr: 93, att: 50, def: 95 },
+            "Lahm": { ovr: 90, att: 78, def: 91 },
+            "Garrincha": { ovr: 94, att: 96, def: 40 },
+            "Puskas": { ovr: 95, att: 97, def: 45 },
+            "Best": { ovr: 93, att: 94, def: 40 },
+            "Eusebio": { ovr: 94, att: 96, def: 45 },
+            "Van Basten": { ovr: 93, att: 95, def: 40 },
+            "Gullit": { ovr: 93, att: 90, def: 88 },
+            "Matthaus": { ovr: 92, att: 88, def: 90 },
+            "Vieira": { ovr: 91, att: 82, def: 92 },
+            "Benzema": { ovr: 90, att: 91, def: 20 },
+            "Scholes": { ovr: 90, att: 86, def: 75 },
+            "Gerrard": { ovr: 90, att: 88, def: 84 },
+            "Lampard": { ovr: 89, att: 89, def: 80 },
+            "Pirlo": { ovr: 91, att: 85, def: 70 },
+            "Sunil Chhetri": { ovr: 90, att: 91, def: 55 },
+            "Bergkamp": { ovr: 91, att: 92, def: 48 },
+            "Cantona": { ovr: 90, att: 91, def: 55 },
+            "Eto'o": { ovr: 91, att: 93, def: 50 },
+            "Drogba": { ovr: 90, att: 92, def: 60 },
+            "Shevchenko": { ovr: 91, att: 93, def: 45 },
+            "Stoichkov": { ovr: 90, att: 91, def: 55 },
+            "Figo": { ovr: 90, att: 89, def: 50 },
+            "Nedved": { ovr: 90, att: 88, def: 75 },
+            "Riquelme": { ovr: 89, att: 87, def: 40 },
+            "Musiala": { ovr: 88, att: 90, def: 58 },
+            "Wirtz": { ovr: 88, att: 89, def: 60 },
+            "Palmer": { ovr: 87, att: 89, def: 55 },
+            "Foden": { ovr: 89, att: 90, def: 62 },
+            "Saka": { ovr: 88, att: 89, def: 68 },
+            "Theo Hernandez": { ovr: 87, att: 86, def: 83 },
+            "Ruben Dias": { ovr: 89, att: 55, def: 90 },
+            "Saliba": { ovr: 88, att: 50, def: 89 },
+            "Alisson": { ovr: 89, att: 10, def: 90 },
+            "Ederson": { ovr: 88, att: 15, def: 88 },
+            "Neuer": { ovr: 89, att: 20, def: 90 },
+            "Schmeichel": { ovr: 91, att: 10, def: 92 },
+            "Cafu": { ovr: 92, att: 85, def: 91 },
+            "Zanetti": { ovr: 90, att: 82, def: 92 },
+            "Cannavaro": { ovr: 92, att: 40, def: 95 },
+            "Vidic": { ovr: 89, att: 45, def: 91 },
+            "Gurpreet Singh Sandhu": { ovr: 89, att: 10, def: 90 },
+            "Carles Puyol": { ovr: 91, att: 50, def: 94 },
+            "Joao Felix": { ovr: 91, att: 92, def: 30 },
+            "Diogo Costa": { ovr: 91, att: 20, def: 90 },
+            "Kimmich": { ovr: 88, att: 84, def: 86 },
+            "Rice": { ovr: 87, att: 78, def: 88 },
+            "Valverde": { ovr: 88, att: 86, def: 85 },
+            "Pedri": { ovr: 87, att: 85, def: 74 },
+            "Gavi": { ovr: 85, att: 80, def: 80 },
+            "Osimhen": { ovr: 88, att: 91, def: 45 },
+            "Lautaro Martinez": { ovr: 89, att: 90, def: 52 },
+            "Griezmann": { ovr: 89, att: 89, def: 75 },
+            "Son Heung-min": { ovr: 88, att: 90, def: 45 },
+            "Dembele": { ovr: 86, att: 88, def: 38 },
+            "Rafael Leao": { ovr: 87, att: 89, def: 40 },
+            "Tchouameni": { ovr: 86, att: 75, def: 87 },
+            "Camavinga": { ovr: 85, att: 82, def: 84 },
+            "Bruno Fernandes": { ovr: 88, att: 88, def: 72 },
+            "Odegaard": { ovr: 88, att: 87, def: 68 },
+            "Xabi Alonso": { ovr: 90, att: 83, def: 86 },
+            "Busquets": { ovr: 88, att: 75, def: 88 },
+            "Hidetoshi Nakata": { ovr: 88, att: 86, def: 72 },
+            "Takefusa Kubo": { ovr: 86, att: 87, def: 45 },
+            "Kaoru Mitoma": { ovr: 85, att: 86, def: 52 }
+
+        };
+
+        const allPlayers = Object.keys(playerData).sort();
+        let myCollection = new Set();
+        const COOLDOWN_TIME = 12 * 60 * 60 * 1000; // 12 Hours
+
+        function updateSidebar() {
+            const list = document.getElementById('playerTrackerList');
+            list.innerHTML = allPlayers.map(p => {
+                const isColl = myCollection.has(p);
+                const imgPath = `images/${p.toLowerCase().replace(/\s+/g, '_')}.png`;
+                return `
+                <div class="player-list-item ${isColl ? 'collected' : ''}">
+                    <img class="sidebar-thumb" src="${imgPath}" onerror="this.style.display='none'">
+                    <span style="font-size:0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p}</span>
+                </div>`;
+            }).join('');
+            document.getElementById('sideTitle').innerText = `COLLECTION (${myCollection.size}/${allPlayers.length})`;
+        }
+
+        function checkCooldown() {
+            const lastOpened = localStorage.getItem('lastPackTime');
+            const packBtn = document.getElementById('packBtn');
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            if (lastOpened) {
+                const elapsed = Date.now() - parseInt(lastOpened);
+                if (elapsed < COOLDOWN_TIME) {
+                    packBtn.disabled = true;
+                    const remaining = COOLDOWN_TIME - elapsed;
+                    startTimer(remaining);
+                    return false;
+                }
+            }
+            packBtn.disabled = false;
+            timerDisplay.innerText = "";
+            return true;
+        }
+
+        function startTimer(duration) {
+            const timerDisplay = document.getElementById('timerDisplay');
+            const interval = setInterval(() => {
+                const hours = Math.floor(duration / (1000 * 60 * 60));
+                const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+
+                timerDisplay.innerText = `Next pack in: ${hours}h ${minutes}m ${seconds}s`;
+                duration -= 1000;
+
+                if (duration < 0) {
+                    clearInterval(interval);
+                    checkCooldown();
+                }
+            }, 1000);
+        }
+
+        function handlePackOpening() {
+            if (checkCooldown()) {
+                openPack();
+                localStorage.setItem('lastPackTime', Date.now().toString());
+                checkCooldown();
+            }
+        }
+
+        function openPack() {
+            const display = document.getElementById('packResults');
+            display.innerHTML = '';
+            const selected = [...allPlayers].sort(() => 0.5 - Math.random()).slice(0, 5);
+
+            selected.forEach(playerName => {
+                const stats = playerData[playerName];
+                const imgPath = `images/${playerName.toLowerCase().replace(/\s+/g, '_')}.png`;
+                myCollection.add(playerName);
+
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                <div class="rating">${stats.ovr}</div>
+                <img class="player-img" src="${imgPath}" onerror="this.style.visibility='hidden'">
+                <div class="player-name">${playerName}</div>
+                <div class="card-stats">
+                    <div><span class="stat-label">ATT</span><span class="stat-value">${stats.att}</span></div>
+                    <div><span class="stat-label">DEF</span><span class="stat-value">${stats.def}</span></div>
+                </div>`;
+                display.appendChild(card);
+            });
+
+            document.getElementById('ssBtn').style.display = 'inline-block';
+            updateSidebar();
+        }
+
+        async function takeScreenshot() {
+            const btn = document.getElementById('ssBtn');
+            btn.innerText = "Saving...";
+            await new Promise(r => setTimeout(r, 500));
+            try {
+                const canvas = await html2canvas(document.getElementById('captureArea'), {
+                    backgroundColor: "#0b0e13",
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                const link = document.createElement('a');
+                link.download = `squad-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            } catch (e) { alert("Download failed. Try hosting your site or using Live Server."); }
+            btn.innerText = "Download Squad";
+        }
+
+        // Initialize
+        updateSidebar();
+        checkCooldown();
+    </script>
+</body>
+
+</html>
