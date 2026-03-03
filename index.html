@@ -230,7 +230,7 @@
     function handlePackOpening() {
         if (packsOpened >= 1 && !verified) {
             document.getElementById('paymentArea').style.display = 'block';
-            alert("Limit reached! Verify payment.");
+            alert("Limit reached! Payment required to open more packs. Please verify via WhatsApp.");
             return;
         }
         openPack();
@@ -284,7 +284,7 @@
     }
 
     function sendToWhatsApp() {
-        window.open(`https://wa.me/9123725812?text=Here%20is%20my%20payment%20confirmation.`, '_blank');
+        window.open(`https://wa.me/9123725812?text=Paid%20Rs100%20please%20confirm.`, '_blank');
         verified = true;
         document.getElementById('paymentArea').style.display = 'none';
     }
